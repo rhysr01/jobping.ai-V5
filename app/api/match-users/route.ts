@@ -19,6 +19,20 @@ import { UserSegmentationOracle } from '@/Utils/userSegmentation';
 import type { JobMatch } from '@/Utils/jobMatching';
 import { dogstatsd } from '@/Utils/datadogMetrics';
 
+// Helper function to safely normalize string/array fields
+function normalizeStringToArray(value: any): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    // Handle both comma-separated and pipe-separated strings
+    if (value.includes('|')) {
+      return value.split('|').map(s => s.trim()).filter(Boolean);
+    }
+    return value.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 // Enhanced monitoring and performance tracking
 interface PerformanceMetrics {
   jobFetchTime: number;
@@ -644,10 +658,10 @@ export async function POST(req: NextRequest) {
     // Transform user data to match expected format (handle TEXT[] arrays from your schema)
     const transformedUsers = users.map((user: any) => ({
       ...user,
-      target_cities: Array.isArray(user.target_cities) ? user.target_cities : (user.target_cities ? [user.target_cities] : []),
-      languages_spoken: Array.isArray(user.languages_spoken) ? user.languages_spoken : (user.languages_spoken ? [user.languages_spoken] : []),
-      company_types: Array.isArray(user.company_types) ? user.company_types : (user.company_types ? [user.company_types] : []),
-      roles_selected: Array.isArray(user.roles_selected) ? user.roles_selected : (user.roles_selected ? [user.roles_selected] : []),
+      target_cities: normalizeStringToArray(user.target_cities),
+      languages_spoken: normalizeStringToArray(user.languages_spoken),
+      company_types: normalizeStringToArray(user.company_types),
+      roles_selected: normalizeStringToArray(user.roles_selected),
       professional_expertise: user.professional_experience || '',
     }));
 

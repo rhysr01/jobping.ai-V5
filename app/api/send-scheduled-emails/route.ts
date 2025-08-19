@@ -10,6 +10,20 @@ import {
 } from '@/Utils/jobMatching';
 import OpenAI from 'openai';
 
+// Helper function to safely normalize string/array fields
+function normalizeStringToArray(value: any): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    // Handle both comma-separated and pipe-separated strings
+    if (value.includes('|')) {
+      return value.split('|').map(s => s.trim()).filter(Boolean);
+    }
+    return value.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 function getSupabaseClient() {
   // Only initialize during runtime, not build time
   if (typeof window !== 'undefined') {
@@ -56,6 +70,12 @@ export async function POST(req: NextRequest) {
 
     // Get all active users who signed up more than 48 hours ago
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    
+    console.log('🔍 Querying users with conditions:', {
+      email_verified: true,
+      subscription_active: true,
+      created_at_lt: fortyEightHoursAgo.toISOString()
+    });
     
     const { data: users, error: usersError } = await supabase
       .from('users')
@@ -121,10 +141,10 @@ export async function POST(req: NextRequest) {
         const userPreferences: UserPreferences = {
           email: user.email,
           full_name: user.full_name || '',
-          target_cities: user.target_cities ? user.target_cities.split(',').map((s: string) => s.trim()) : [],
-          languages_spoken: user.languages_spoken ? user.languages_spoken.split(',').map((s: string) => s.trim()) : [],
-          company_types: user.company_types ? user.company_types.split(',').map((s: string) => s.trim()) : [],
-          roles_selected: user.roles_selected ? user.roles_selected.split(',').map((s: string) => s.trim()) : [],
+          target_cities: normalizeStringToArray(user.target_cities),
+          languages_spoken: normalizeStringToArray(user.languages_spoken),
+          company_types: normalizeStringToArray(user.company_types),
+          roles_selected: normalizeStringToArray(user.roles_selected),
           professional_expertise: user.professional_expertise || 'entry',
           visa_status: user.visa_status || 'unknown',
           start_date: user.start_date ? new Date(user.start_date).toISOString() : new Date().toISOString(),

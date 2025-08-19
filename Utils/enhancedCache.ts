@@ -82,8 +82,11 @@ export class EnhancedCache<T> {
     this.currentTTL = defaultTTL;
     // Note: AdvancedMonitoringOracle uses static methods only
     this.stats = this.initializeStats();
-    // Lazy initialize Redis to avoid build-time issues
-    this.initializeRedis().catch(console.error);
+    // Skip Redis initialization in test mode
+    if (process.env.NODE_ENV !== 'test') {
+      // Lazy initialize Redis to avoid build-time issues
+      this.initializeRedis().catch(console.error);
+    }
   }
 
   private initializeStats(): CacheStats {

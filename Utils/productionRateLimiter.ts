@@ -161,6 +161,12 @@ class ProductionRateLimiter {
   }
 
   private async initializeRedis() {
+    // Skip Redis initialization in test mode
+    if (process.env.NODE_ENV === 'test') {
+      console.log('🧪 Test mode: Skipping Redis initialization for rate limiter');
+      return;
+    }
+
     try {
       if (process.env.REDIS_URL) {
         this.redis = createClient({
@@ -315,6 +321,11 @@ class ProductionRateLimiter {
     endpoint: string,
     customConfig?: { windowMs: number; maxRequests: number }
   ): Promise<NextResponse | null> {
+    // Skip rate limiting in test mode
+    if (process.env.NODE_ENV === 'test') {
+      return null;
+    }
+
     const identifier = this.getClientIdentifier(req);
     const result = await this.checkRateLimit(endpoint, identifier, customConfig);
 

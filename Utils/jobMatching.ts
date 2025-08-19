@@ -122,6 +122,20 @@ export { EnhancedAIMatchingCache, enhancedAIMatchingCache } from './enhancedCach
 
 // Use the Job interface from scrapers/types.ts instead of local definition
 
+// Helper function to safely normalize string/array fields
+function normalizeStringToArray(value: any): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    // Handle both comma-separated and pipe-separated strings
+    if (value.includes('|')) {
+      return value.split('|').map(s => s.trim()).filter(Boolean);
+    }
+    return value.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 export interface UserPreferences {
   email: string;
   full_name: string;
@@ -436,12 +450,12 @@ class DataDrivenJobMatcher {
   }
 
   private static parseStudentContext(userPrefs: UserPreferences): StudentContext {
-    const preferredCities = Array.isArray(userPrefs.target_cities) ? userPrefs.target_cities : [];
-    const languages = Array.isArray(userPrefs.languages_spoken) ? userPrefs.languages_spoken : [];
+    const preferredCities = normalizeStringToArray(userPrefs.target_cities);
+    const languages = normalizeStringToArray(userPrefs.languages_spoken);
     const experienceMonths = this.parseExperienceToMonths(userPrefs.professional_expertise || '0');
     const workPreference = this.parseWorkPreference(userPrefs.work_environment || 'office');
     const visaCategory = this.simplifyVisaStatus(userPrefs.visa_status || 'eu-citizen');
-    const careerPaths = Array.isArray(userPrefs.roles_selected) ? userPrefs.roles_selected : [];
+    const careerPaths = normalizeStringToArray(userPrefs.roles_selected);
 
     return {
       preferredCities,
@@ -677,6 +691,9 @@ class DataDrivenJobMatcher {
     
     // Extract career path from job using the extraction function
     const jobCareerPath = extractCareerPath(job.title || '', job.description || '');
+    
+    // Handle categories field safely
+    const jobCategories = normalizeStringToArray(job.categories);
     
     for (const careerPath of studentContext.careerPaths) {
       let pathScore = 0;
